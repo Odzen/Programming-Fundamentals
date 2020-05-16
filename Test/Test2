@@ -1,0 +1,185 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-advanced-reader.ss" "lang")((modname preparvial) (read-case-sensitive #t) (teachpacks ((lib "image.rkt" "teachpack" "2htdp") (lib "universe.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #f #t none #f ((lib "image.rkt" "teachpack" "2htdp") (lib "universe.rkt" "teachpack" "2htdp")) #f)))
+;Contrato:
+;arbol es un estructura que representa un arbol de busqueda
+;sus atributos son raiz, que es el nodo principal de la estructura,
+;puede representar cualquier tipo de dato
+;izq y der que representan los hijos del arbol binario, este puede ser de tipo number,
+;posiblemente empty, o una instancia de la estructura arbol.
+(define-struct arbol (raiz izq der))
+
+
+;instancias de la estructura arbol
+
+(define operacion1 (make-arbol
+                    +
+                    (make-arbol
+                       *
+                       (make-arbol 2 empty empty)
+                        (make-arbol 4 empty empty))
+                    (make-arbol
+                     +
+                     (make-arbol 6 empty empty)
+                     (make-arbol
+                      -
+                      (make-arbol /
+                                  
+                                   (make-arbol 25 empty (make-arbol /
+                                  
+                                   (make-arbol 25 empty empty)
+                                   (make-arbol 5 empty empty)))
+                                   (make-arbol 5 empty empty))
+                       empty
+                                            ))))
+
+(define operacion2 (make-arbol *
+                               (make-arbol - (make-arbol 4 empty empty) (make-arbol / (make-arbol * (make-arbol 6 empty empty)(make-arbol 8 empty empty)) (make-arbol 2 empty empty)))
+                               (make-arbol 2.5 empty empty)))
+
+(define operacion3 (make-arbol + empty empty))
+
+(define operacion4 (make-arbol *
+                               (make-arbol - (make-arbol 4 empty empty) (make-arbol / (make-arbol * (make-arbol 6 empty empty)(make-arbol 8 empty empty)) (make-arbol 2 empty empty)))
+                               empty))
+
+(define operacion5 (make-arbol
+                    +
+                    (make-arbol
+                       *
+                       (make-arbol 2 empty empty)
+                        (make-arbol 4 empty empty))
+                    (make-arbol
+                     +
+                     (make-arbol 6 empty empty)
+                     (make-arbol
+                      -
+                      (make-arbol /
+                                  
+                                   (make-arbol 25 empty (make-arbol /
+                                  
+                                   (make-arbol 25 empty empty)
+                                   (make-arbol 5 empty empty)))
+                                   (make-arbol 5 empty empty))
+                       empty
+                                            ))))
+
+
+
+
+;____________________________________________________________________________________________________________________________
+
+;Contrato:
+;compararstruct: arbol arbol -> Boolean 
+;Proposito:Determinar si un arbol binario tiene la misma estructura
+;ejemplo (compararstruct operacion2 operacion4) debe retornar true
+(define (compararstruct a1 a2)(cond
+                                [(or
+                                  (and
+                                  (empty? (arbol-der a1))
+                                  (empty? (arbol-izq a1))
+                                  (empty? (arbol-der a2))
+                                  (empty? (arbol-izq a2)))
+                                  (or
+                                   (and
+                                    (empty? (arbol-izq a1))
+                                    (empty? (arbol-izq a2)))
+                                   (and
+                                    (empty? (arbol-der a1))
+                                    (empty? (arbol-der a2)))))
+                                  #t]
+                                [(or (empty? (arbol-izq a1))
+                                     (empty? (arbol-izq a2))
+                                     (empty? (arbol-der a1))
+                                     (empty? (arbol-der a2))) #f]
+                                [else (and (compararstruct (arbol-der a1) (arbol-izq a1))
+                                           (compararstruct (arbol-izq a2) (arbol-der a2)))]))
+;prueba
+
+                               
+(check-expect(compararstruct operacion2 operacion4)#f)
+
+;Contrato:
+;compararstruct: arbol arbol -> Boolean 
+;Proposito:Determinar si un arbol binario tiene la misma estructura y los mismos valores
+;ejemplo (estructura-valores? operacion1 operacion5) debe retornar true
+
+(define (estructura-valores? a1 a2) (cond
+                                      [(compararstruct a1 a2) (equal?(arbol-raiz a1) (arbol-raiz a1))]
+                                      [else (and
+                                            (estructura-valores? (arbol-der a1) (arbol-izq a1))
+                                            (estructura-valores? (arbol-der a2) (arbol-izq a2)))]))
+;prueba
+(check-expect(estructura-valores? operacion1 operacion5)#t)
+
+
+;____________________________________________________________________________________________________________________________
+
+;Contrato:
+;hoja?: nodo -> Boolean
+;Proposito: Determina si un nodo es una hoja o no,
+;esto quiere decir que no tiene raices o no almacena ningun dato,
+;para ello se evalua si sus hijos estan vacios (empty)
+;Ejemplo:
+(define (hoja? x)(and (empty? (arbol-der x))(empty? (arbol-izq x))))
+
+
+
+                               
+
+;-------------------------------------------------------------------------------------------------
+;Punto 5 Parcial
+;nuevas instancias de estructura arbol
+(define tree (make-arbol 1 (make-arbol 2
+                                       (make-arbol 2
+                                                   (make-arbol 4 (make-arbol 1 empty empty)
+                                                                 (make-arbol 3 empty empty))
+                                                   empty)
+                                       (make-arbol 1 (make-arbol 4 empty empty) empty))
+                         (make-arbol 1
+                                     (make-arbol 3 empty empty)
+                                     (make-arbol 3
+                                                 (make-arbol 2
+                                                             (make-arbol 1 empty empty)
+                                                             (make-arbol 3 empty empty))
+                                                 empty))))
+;Contrato:
+;tsuma: struct number -> Boolean
+;Proposito: Determina si existe un camino en un arbol
+;en el cual su suma sea igual al parametro de tipo number dado
+;Ejemplo: (tsuma tree 8) deberia de retornar true
+
+(define (tsuma arbol suma) (cond
+                             [(empty? arbol) #f]
+                             [(equal? (arbol-raiz arbol) suma) #t]
+                             [(hoja? arbol) (equal? (arbol-raiz arbol) suma)]
+                             [else (or (tsuma (arbol-izq arbol) (- suma (arbol-raiz arbol)))
+                                       (tsuma (arbol-der arbol) (- suma (arbol-raiz arbol))))]))
+;Pruebas
+(check-expect (tsuma tree 8) #t)
+
+;Contrato:
+;tsuma: struct number -> list
+;Proposito: arroja una lista del camino que debe seguir el arbol para ser igual al numero
+;dado, si existe el camino, si no es falso
+;Ejemplo: (camino tree 8) deberia de retornar (list 1 2 1 4) o (list 1 1 3 2 1)
+
+
+(define (camino arbol suma) (cond
+                             [(empty? arbol) #f]
+                             [(tsuma arbol suma)
+                              (cond
+                             
+                              [(equal? (arbol-raiz arbol) suma)
+                               (append(list (arbol-raiz arbol)) (camino (arbol-izq arbol)  suma)
+                                                               (camino (arbol-der arbol) suma))]
+[else (camino (arbol-izq arbol)  suma)])
+                             [else #f]]))
+
+
+(camino tree 8)
+
+
+
+;-----------------------------------------------
+
